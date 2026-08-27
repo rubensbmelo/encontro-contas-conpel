@@ -199,7 +199,7 @@ st.markdown(f"""
         {logo_img_tag}
         <div>
             <h1>Gestão de Encontro de Contas</h1>
-            <p>NOVA CONPEL & PINCÉIS ROMA — Acompanhamento de Maquinário e Faturamento</p>
+            <p>NOVA CONPEL & PINCÉIS ROMA — Acompanhamento do Acordo e Faturamento</p>
         </div>
     </div>
 </div>
@@ -246,7 +246,7 @@ k1, k2, k3, k4 = st.columns(4)
 with k1:
     st.markdown(f"""
     <div class="kpi-container">
-        <div class="kpi-label">Valor Total da Máquina</div>
+        <div class="kpi-label">Valor Total do Acordo</div>
         <div class="kpi-value" style="color: #512C19;">{format_brl(VALOR_TOTAL_MAQUINA)}</div>
         <small style="color: #785D50;">6 parcelas de {format_brl(PARCELA_MENSAL)}</small>
     </div>
@@ -264,7 +264,7 @@ with k2:
 with k3:
     st.markdown(f"""
     <div class="kpi-container">
-        <div class="kpi-label">Saldo Restante Máquina</div>
+        <div class="kpi-label">Saldo Restante do Acordo</div>
         <div class="kpi-value" style="color: #C27835;">{format_brl(saldo_geral_maquina)}</div>
         <small style="color: #785D50;">A compensar nos próximos meses</small>
     </div>
@@ -325,7 +325,7 @@ with selected_tabs[0]:
             marker_colors=['#512C19', '#EAE0D8']
         )])
         fig_donut.update_layout(
-            title=f"Quitação da Máquina: {percentual_quitado:.1f}%",
+            title=f"Quitação do Acordo: {percentual_quitado:.1f}%",
             annotations=[dict(text=f"{percentual_quitado:.1f}%", x=0.5, y=0.5, font_size=24, showarrow=False, font_weight='bold', font_color='#512C19')],
             margin=dict(l=20, r=20, t=50, b=20),
             height=340,
