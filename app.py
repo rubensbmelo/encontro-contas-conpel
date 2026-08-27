@@ -287,65 +287,135 @@ selected_tabs = st.tabs(tab_names)
 
 # Tab 0: Visão Consolidada
 with selected_tabs[0]:
-    st.subheader("📈 Resumo Consolidado do Encontro de Contas")
+    # 1. Mobile-friendly Progress Bar Card
+    st.markdown(f"""
+    <div style="background: #FFFFFF; border: 1px solid #EAE0D8; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(81,44,25,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+            <div>
+                <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #785D50; letter-spacing: 0.5px;">Quitação Geral do Acordo</span>
+                <div style="font-size: 18px; font-weight: 800; color: #512C19; margin-top: 2px;">{format_brl(total_compensado_geral)} <span style="font-size: 13px; font-weight: 500; color: #785D50;">de {format_brl(VALOR_TOTAL_MAQUINA)}</span></div>
+            </div>
+            <div style="background: #FAF6F2; border: 1px solid #D6C5BC; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 800; color: #512C19;">
+                {percentual_quitado:.1f}% concluído
+            </div>
+        </div>
+        <div style="background: #EAE0D8; border-radius: 999px; height: 12px; width: 100%; overflow: hidden; margin-top: 6px;">
+            <div style="background: linear-gradient(90deg, #512C19 0%, #784227 100%); width: {percentual_quitado}%; height: 100%; border-radius: 999px;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: #785D50; flex-wrap: wrap; gap: 4px;">
+            <span>✅ Total Compensado: <strong style="color: #16A34A;">{format_brl(total_compensado_geral)}</strong></span>
+            <span>⏳ Saldo Restante: <strong style="color: #C27835;">{format_brl(saldo_geral_maquina)}</strong></span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 2. Clean Responsive Evolution Chart
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=df_resumo['mes'],
+        y=df_resumo['total_notas'],
+        name='Faturamento Lançado',
+        marker_color='#512C19',
+        text=[format_brl(v) if v > 0 else '' for v in df_resumo['total_notas']],
+        textposition='outside'
+    ))
+    fig.add_trace(go.Scatter(
+        x=df_resumo['mes'],
+        y=[PARCELA_MENSAL] * len(MESES),
+        name='Parcela Mensal (R$ 150k)',
+        mode='lines',
+        line=dict(color='#C27835', width=2, dash='dash')
+    ))
+    fig.update_layout(
+        title="📊 Evolução Mensal do Encontro de Contas",
+        yaxis_title="Valor (R$)",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=10, r=10, t=45, b=10),
+        height=280,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(size=11)
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.write("### 📅 Resumo Mês a Mês")
     
-    col_chart1, col_chart2 = st.columns([3, 2])
-    
-    with col_chart1:
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            x=df_resumo['mes'],
-            y=df_resumo['total_notas'],
-            name='Notas Lançadas (R$)',
-            marker_color='#512C19'
-        ))
-        fig.add_trace(go.Scatter(
-            x=df_resumo['mes'],
-            y=[PARCELA_MENSAL] * len(MESES),
-            name='Meta Parcela (R$ 150k)',
-            mode='lines',
-            line=dict(color='#C27835', width=2.5, dash='dash')
-        ))
-        fig.update_layout(
-            title="Evolução Mensal: Faturamento vs. Parcela de Compensação",
-            yaxis_title="Valor (R$)",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            margin=dict(l=20, r=20, t=50, b=20),
-            height=340,
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    # 3. Mobile-First Modern Cards for each month
+    # In desktop: 3 columns; in mobile: stacks neatly into 1 column
+    row1_cols = st.columns(3)
+    row2_cols = st.columns(3)
+    all_grid_cols = row1_cols + row2_cols
 
-    with col_chart2:
-        fig_donut = go.Figure(data=[go.Pie(
-            labels=['Compensado', 'Saldo Restante'],
-            values=[total_compensado_geral, max(saldo_geral_maquina, 0)],
-            hole=.65,
-            marker_colors=['#512C19', '#EAE0D8']
-        )])
-        fig_donut.update_layout(
-            title=f"Quitação do Acordo: {percentual_quitado:.1f}%",
-            annotations=[dict(text=f"{percentual_quitado:.1f}%", x=0.5, y=0.5, font_size=24, showarrow=False, font_weight='bold', font_color='#512C19')],
-            margin=dict(l=20, r=20, t=50, b=20),
-            height=340,
-            paper_bgcolor='rgba(0,0,0,0)'
-        )
-        st.plotly_chart(fig_donut, use_container_width=True)
+    for idx, r_row in df_resumo.iterrows():
+        col = all_grid_cols[idx]
+        m_name = r_row['mes']
+        m_total = r_row['total_notas']
+        m_comp = r_row['compensado']
+        m_saldo = r_row['saldo']
+        m_exced = r_row['excedente']
+        m_qtd = r_row['qtd_notas']
+        m_status = r_row['status']
+        
+        # Status Badge Colors
+        if m_status == "Compensado":
+            badge_bg = "#DCFCE7"
+            badge_color = "#166534"
+            badge_border = "#BBF7D0"
+        elif m_status == "Pendente":
+            badge_bg = "#FEF9C3"
+            badge_color = "#854D0E"
+            badge_border = "#FEF08A"
+        elif m_status == "Excedente a Cobrar":
+            badge_bg = "#DBEAFE"
+            badge_color = "#1E40AF"
+            badge_border = "#BFDBFE"
+        else:
+            badge_bg = "#F3F4F6"
+            badge_color = "#6B7280"
+            badge_border = "#E5E7EB"
 
-    # Detalhamento Tabela
-    st.write("### Detalhamento por Mês")
-    table_display = df_resumo.copy()
-    table_display['parcela'] = table_display['parcela'].apply(format_brl)
-    table_display['total_notas'] = table_display['total_notas'].apply(format_brl)
-    table_display['compensado'] = table_display['compensado'].apply(format_brl)
-    table_display['saldo'] = table_display['saldo'].apply(format_brl)
-    table_display['excedente'] = table_display['excedente'].apply(format_brl)
-    table_display.columns = ['Mês', 'Parcela', 'Total Notas', 'Encontro de Contas', 'Saldo Pendente', 'Excedente a Cobrar', 'Status', 'Qtd Notas']
-    st.dataframe(table_display, use_container_width=True, hide_index=True)
+        with col:
+            st.markdown(f"""
+            <div style="background: #FFFFFF; border: 1px solid #EAE0D8; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(81,44,25,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-weight: 800; font-size: 15px; color: #512C19;">{m_name}</span>
+                    <span style="background: {badge_bg}; color: {badge_color}; border: 1px solid {badge_border}; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px;">
+                        {m_status}
+                    </span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                    <span style="color: #785D50;">Notas Lançadas:</span>
+                    <strong style="color: #2A160C;">{format_brl(m_total)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                    <span style="color: #785D50;">Encontro de Contas:</span>
+                    <strong style="color: #16A34A;">{format_brl(m_comp)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                    <span style="color: #785D50;">Saldo da Parcela:</span>
+                    <strong style="color: {'#C27835' if m_saldo > 0 else '#16A34A'};">{format_brl(m_saldo)}</strong>
+                </div>
+                {f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;"><span style="color: #2563EB;">Excedente a Faturar:</span><strong style="color: #2563EB;">{format_brl(m_exced)}</strong></div>' if m_exced > 0 else ''}
+                <div style="border-top: 1px dashed #EAE0D8; margin-top: 10px; padding-top: 8px; font-size: 11.5px; color: #785D50; display: flex; justify-content: space-between;">
+                    <span>Qtd. de Notas: <strong>{m_qtd}</strong></span>
+                    <span>Parcela: <strong>{format_brl(PARCELA_MENSAL)}</strong></span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    # Download Excel
-    st.divider()
+    # 4. Optional Table in Expander
+    with st.expander("📋 Ver Tabela Completa (Formato Planilha)"):
+        table_display = df_resumo.copy()
+        table_display['parcela'] = table_display['parcela'].apply(format_brl)
+        table_display['total_notas'] = table_display['total_notas'].apply(format_brl)
+        table_display['compensado'] = table_display['compensado'].apply(format_brl)
+        table_display['saldo'] = table_display['saldo'].apply(format_brl)
+        table_display['excedente'] = table_display['excedente'].apply(format_brl)
+        table_display.columns = ['Mês', 'Parcela', 'Total Notas', 'Encontro de Contas', 'Saldo Pendente', 'Excedente a Cobrar', 'Status', 'Qtd Notas']
+        st.dataframe(table_display, use_container_width=True, hide_index=True)
+
+    # Download Excel Button
+    st.write("")
     def generate_excel():
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -359,11 +429,13 @@ with selected_tabs[0]:
         return output.getvalue()
 
     st.download_button(
-        label="📥 Exportar Dados Atualizados para Excel (.xlsx)",
+        label="📥 Baixar Planilha Consolidada (.xlsx)",
         data=generate_excel(),
         file_name="Encontro_de_Contas_Nova_Conpel_Oficial.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True
     )
+
 
 # Individual Month Tabs
 for i, m in enumerate(MESES, start=1):
