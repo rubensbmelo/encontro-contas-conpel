@@ -384,7 +384,7 @@ for i, m in enumerate(MESES, start=1):
         if not notas_mes.empty:
             for idx, n in notas_mes.iterrows():
                 with st.container():
-                    c_date, c_nf, c_val, c_doc, c_obs = st.columns([2, 2, 2, 2.5, 3.5])
+                    c_date, c_nf, c_val, c_doc = st.columns([2.5, 2.5, 3, 3])
                     
                     try:
                         d_obj = datetime.strptime(str(n['data'])[:10], "%Y-%m-%d")
@@ -401,8 +401,6 @@ for i, m in enumerate(MESES, start=1):
                         c_doc.link_button("📄 Abrir PDF (Drive)", link_val)
                     else:
                         c_doc.caption("Sem anexo")
-                        
-                    c_obs.write(n['observacao'] if n['observacao'] and n['observacao'] != 'None' else "—")
                 st.divider()
         else:
             st.info(f"Nenhuma nota fiscal lançada para {m}.")
