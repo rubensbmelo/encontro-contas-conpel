@@ -35,7 +35,7 @@ def init_db():
             ('AGOSTO', '2026-08-04', '17389', 38226.80, 'https://drive.google.com/file/d/1JlclQDJ9VgVNodW4AaZYGi7rnzPjXUOY/view?usp=drive_link', '2ª remessa do mês'),
             ('AGOSTO', '2026-08-17', '17744', 19068.94, 'https://drive.google.com/file/d/1J2m-bmHPXTGrXBxt14hm9qWJuAbVM-MJ/view?usp=drive_link', 'Materiais especiais'),
             ('AGOSTO', '2026-08-20', '17857', 26703.85, 'https://drive.google.com/file/d/1CoCKEQTstDbJCL4OeadjVKBUL_h7otbM/view?usp=drive_link', 'Faturamento quinzenal'),
-            ('AGOSTO', '2026-08-26', '18096', 15876.21, '', 'Fechamento parcial')
+            ('AGOSTO', '2026-08-26', '18096', 15876.21, 'https://drive.google.com/file/d/1gvbNxshnhWvIIyQeMjwZFSPXKAU5Gw6i/view?usp=drive_link', 'Fechamento parcial')
         ]
         cursor.executemany("""
             INSERT INTO notas_fiscais (mes, data, numero_nf, valor, link_drive, observacao)
