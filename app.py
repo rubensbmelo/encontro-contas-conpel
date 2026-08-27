@@ -6,16 +6,17 @@ from datetime import datetime
 import io
 import json
 import os
+import base64
 
 import drive_sync as ds
 import database as db
 
 # Page configuration
 st.set_page_config(
-    page_title="Encontro de Contas • Nova Conpel x Pincéis Roma",
-    page_icon="🏭",
+    page_title="Nova Conpel • Encontro de Contas",
+    page_icon="logo_conpel.png" if os.path.exists("logo_conpel.png") else "🏭",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Constants
@@ -24,6 +25,17 @@ NUM_PARCELAS = 6
 VALOR_TOTAL_MAQUINA = PARCELA_MENSAL * NUM_PARCELAS
 MESES = ['AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO', 'JANEIRO']
 CONFIG_FILE = "config_drive.json"
+
+# Helper for logo in base64
+def get_logo_base64():
+    logo_path = os.path.join(os.path.dirname(__file__), "logo_conpel.png")
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    return None
+
+logo_b64 = get_logo_base64()
+logo_img_tag = f'<img src="data:image/png;base64,{logo_b64}" style="width: 58px; height: 58px; border-radius: 12px; background: white; padding: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">' if logo_b64 else '<div style="width: 52px; height: 52px; background: #512C19; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px;">NC</div>'
 
 # Helper for configs
 def load_config():
@@ -44,58 +56,98 @@ def save_config(cfg):
 
 config = load_config()
 
-# Custom CSS
+# Nova Conpel Theme CSS
 st.markdown("""
 <style>
+    /* Global accents */
+    :root {
+        --conpel-primary: #512C19;
+        --conpel-dark: #381E11;
+        --conpel-light: #784227;
+        --conpel-accent: #C27835;
+        --conpel-bg: #FAF6F2;
+    }
+    
     .main-header {
-        background: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
-        padding: 22px 26px;
-        border-radius: 16px;
+        background: linear-gradient(135deg, #512C19 0%, #381E11 100%);
+        padding: 24px 28px;
+        border-radius: 18px;
         color: white;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 12px rgba(15, 118, 110, 0.15);
+        margin-bottom: 22px;
+        box-shadow: 0 6px 16px rgba(81, 44, 25, 0.2);
     }
     .main-header h1 {
-        color: white !important;
+        color: #FFFFFF !important;
         font-size: 25px;
         font-weight: 800;
         margin: 0;
+        letter-spacing: -0.5px;
     }
     .main-header p {
-        color: #CCFBF1 !important;
-        font-size: 13.5px;
+        color: #E8D8CF !important;
+        font-size: 14px;
         margin: 4px 0 0 0;
     }
+    
     .kpi-container {
-        background-color: var(--secondary-background-color, #F8FAFC);
-        border: 1px solid rgba(128, 128, 128, 0.2);
+        background: #FFFFFF;
+        border: 1px solid #EAE0D8;
         border-radius: 14px;
-        padding: 16px 18px;
-        transition: transform 0.2s ease;
+        padding: 18px 20px;
+        box-shadow: 0 2px 6px rgba(81, 44, 25, 0.04);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .kpi-container:hover {
         transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(81, 44, 25, 0.08);
     }
     .kpi-label {
         font-size: 11.5px;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #64748B;
+        letter-spacing: 0.6px;
+        color: #785D50;
     }
     .kpi-value {
-        font-size: 23px;
+        font-size: 24px;
         font-weight: 800;
-        margin: 5px 0 2px 0;
+        margin: 6px 0 3px 0;
     }
-    .sync-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
+    
+    /* Primary buttons */
+    .stButton>button {
+        background-color: #512C19 !important;
+        color: white !important;
+        border-radius: 8px !important;
+        border: none !important;
+        font-weight: 600 !important;
+        transition: background-color 0.2s ease !important;
+    }
+    .stButton>button:hover {
+        background-color: #784227 !important;
+    }
+    
+    /* Link buttons */
+    a[data-testid="stLinkButton"] {
+        background-color: #FAF6F2 !important;
+        color: #512C19 !important;
+        border: 1px solid #D6C5BC !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
+    a[data-testid="stLinkButton"]:hover {
+        background-color: #512C19 !important;
+        color: #FFFFFF !important;
+        border-color: #512C19 !important;
+    }
+    
+    /* Tabs styling */
+    button[data-baseweb="tab"] {
+        font-weight: 700 !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #512C19 !important;
+        border-bottom-color: #512C19 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -105,9 +157,11 @@ def format_brl(val):
 
 # Sidebar: Conexao com Google Drive
 with st.sidebar:
-    st.image("https://img.icons8.com/color/96/google-drive--v2.png", width=42)
-    st.title("Conexão Google Drive")
-    st.caption("Sincronização em tempo real com a planilha online.")
+    if os.path.exists("logo_conpel.png"):
+        st.image("logo_conpel.png", width=70)
+    st.title("Nova Conpel")
+    st.caption("Painel de Gestão e Encontro de Contas")
+    st.divider()
     
     drive_input = st.text_input(
         "Link da Planilha no Drive:",
@@ -122,39 +176,34 @@ with st.sidebar:
         save_config(config)
         st.rerun()
         
-    if col_s2.button("💾 Salvar Link", use_container_width=True):
+    if col_s2.button("💾 Salvar", use_container_width=True):
         config["drive_url"] = drive_input
         save_config(config)
-        st.success("Link salvo!")
+        st.success("Salvo!")
 
-    st.divider()
     if drive_input:
-        st.link_button("🔗 Abrir Planilha no Drive", drive_input, use_container_width=True)
+        st.write("")
+        st.link_button("🔗 Abrir Planilha Google Drive", drive_input, use_container_width=True)
 
-# Fetch Data (Cache with TTL 60s for live sync)
+# Fetch Data quietly (Cache with TTL 60s for live sync)
 @st.cache_data(ttl=60)
 def fetch_live_data(url):
     return ds.load_data_from_google_drive(url)
 
 dados_meses, sync_ok, sync_msg = fetch_live_data(config.get("drive_url", ""))
 
-# Top Header Bar
-st.markdown("""
+# Top Header Bar with Nova Conpel Logo
+st.markdown(f"""
 <div class="main-header">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 18px;">
+        {logo_img_tag}
         <div>
-            <h1>🏭 Gestão de Encontro de Contas</h1>
-            <p>Nova Conpel & Pincéis Roma — Maquinário & Faturamento Sincronizado</p>
+            <h1>Gestão de Encontro de Contas</h1>
+            <p>NOVA CONPEL & PINCÉIS ROMA — Acompanhamento de Maquinário e Faturamento</p>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
-
-# Sync Status indicator
-if sync_ok:
-    st.success(f"🟢 **Sincronizado ao vivo com o Google Drive!** Os dados refletem a planilha em tempo real.")
-else:
-    st.warning(f"🟡 **Modo Local / Backup ativo.** {sync_msg}")
 
 # Resumo Global Calculations
 resumo_meses = []
@@ -198,8 +247,8 @@ with k1:
     st.markdown(f"""
     <div class="kpi-container">
         <div class="kpi-label">Valor Total da Máquina</div>
-        <div class="kpi-value" style="color: #0F766E;">{format_brl(VALOR_TOTAL_MAQUINA)}</div>
-        <small style="color: #64748B;">6 parcelas de {format_brl(PARCELA_MENSAL)}</small>
+        <div class="kpi-value" style="color: #512C19;">{format_brl(VALOR_TOTAL_MAQUINA)}</div>
+        <small style="color: #785D50;">6 parcelas de {format_brl(PARCELA_MENSAL)}</small>
     </div>
     """, unsafe_allow_html=True)
 
@@ -208,7 +257,7 @@ with k2:
     <div class="kpi-container">
         <div class="kpi-label">Total Compensado</div>
         <div class="kpi-value" style="color: #16A34A;">{format_brl(total_compensado_geral)}</div>
-        <small style="color: #16A34A; font-weight: 600;">{percentual_quitado:.1f}% quitado</small>
+        <small style="color: #16A34A; font-weight: 700;">{percentual_quitado:.1f}% quitado</small>
     </div>
     """, unsafe_allow_html=True)
 
@@ -216,8 +265,8 @@ with k3:
     st.markdown(f"""
     <div class="kpi-container">
         <div class="kpi-label">Saldo Restante Máquina</div>
-        <div class="kpi-value" style="color: #D97706;">{format_brl(saldo_geral_maquina)}</div>
-        <small style="color: #64748B;">A compensar nos próximos meses</small>
+        <div class="kpi-value" style="color: #C27835;">{format_brl(saldo_geral_maquina)}</div>
+        <small style="color: #785D50;">A compensar nos próximos meses</small>
     </div>
     """, unsafe_allow_html=True)
 
@@ -225,8 +274,8 @@ with k4:
     st.markdown(f"""
     <div class="kpi-container">
         <div class="kpi-label">Excedente Faturado</div>
-        <div class="kpi-value" style="color: #2563EB;">{format_brl(total_excedente_geral)}</div>
-        <small style="color: #64748B;">Valor extra faturado a cobrar</small>
+        <div class="kpi-value" style="color: #784227;">{format_brl(total_excedente_geral)}</div>
+        <small style="color: #785D50;">Valor a faturar separadamente</small>
     </div>
     """, unsafe_allow_html=True)
 
@@ -248,21 +297,23 @@ with selected_tabs[0]:
             x=df_resumo['mes'],
             y=df_resumo['total_notas'],
             name='Notas Lançadas (R$)',
-            marker_color='#0F766E'
+            marker_color='#512C19'
         ))
         fig.add_trace(go.Scatter(
             x=df_resumo['mes'],
             y=[PARCELA_MENSAL] * len(MESES),
             name='Meta Parcela (R$ 150k)',
             mode='lines',
-            line=dict(color='#DC2626', width=2, dash='dash')
+            line=dict(color='#C27835', width=2.5, dash='dash')
         ))
         fig.update_layout(
             title="Evolução Mensal: Faturamento vs. Parcela de Compensação",
             yaxis_title="Valor (R$)",
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             margin=dict(l=20, r=20, t=50, b=20),
-            height=340
+            height=340,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -271,13 +322,14 @@ with selected_tabs[0]:
             labels=['Compensado', 'Saldo Restante'],
             values=[total_compensado_geral, max(saldo_geral_maquina, 0)],
             hole=.65,
-            marker_colors=['#16A34A', '#E2E8F0']
+            marker_colors=['#512C19', '#EAE0D8']
         )])
         fig_donut.update_layout(
             title=f"Quitação da Máquina: {percentual_quitado:.1f}%",
-            annotations=[dict(text=f"{percentual_quitado:.1f}%", x=0.5, y=0.5, font_size=24, showarrow=False, font_weight='bold')],
+            annotations=[dict(text=f"{percentual_quitado:.1f}%", x=0.5, y=0.5, font_size=24, showarrow=False, font_weight='bold', font_color='#512C19')],
             margin=dict(l=20, r=20, t=50, b=20),
-            height=340
+            height=340,
+            paper_bgcolor='rgba(0,0,0,0)'
         )
         st.plotly_chart(fig_donut, use_container_width=True)
 
@@ -309,7 +361,7 @@ with selected_tabs[0]:
     st.download_button(
         label="📥 Exportar Dados Atualizados para Excel (.xlsx)",
         data=generate_excel(),
-        file_name="Encontro_de_Contas_Nova_Conpel_Sincronizado.xlsx",
+        file_name="Encontro_de_Contas_Nova_Conpel_Oficial.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
@@ -327,7 +379,7 @@ for i, m in enumerate(MESES, start=1):
         st.divider()
 
         notas_mes = dados_meses.get(m, pd.DataFrame())
-        st.subheader(f"📋 Notas Fiscais — {m} ({len(notas_mes)} lançadas na planilha)")
+        st.subheader(f"📋 Notas Fiscais — {m} ({len(notas_mes)} lançadas)")
         
         if not notas_mes.empty:
             for idx, n in notas_mes.iterrows():
@@ -353,4 +405,4 @@ for i, m in enumerate(MESES, start=1):
                     c_obs.write(n['observacao'] if n['observacao'] and n['observacao'] != 'None' else "—")
                 st.divider()
         else:
-            st.info(f"Nenhuma nota fiscal lançada para {m} na planilha.")
+            st.info(f"Nenhuma nota fiscal lançada para {m}.")
