@@ -288,26 +288,25 @@ selected_tabs = st.tabs(tab_names)
 # Tab 0: Visão Consolidada
 with selected_tabs[0]:
     # 1. Mobile-friendly Progress Bar Card
-    st.markdown(f"""
-    <div style="background: #FFFFFF; border: 1px solid #EAE0D8; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(81,44,25,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
-            <div>
-                <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #785D50; letter-spacing: 0.5px;">Quitação Geral do Acordo</span>
-                <div style="font-size: 18px; font-weight: 800; color: #512C19; margin-top: 2px;">{format_brl(total_compensado_geral)} <span style="font-size: 13px; font-weight: 500; color: #785D50;">de {format_brl(VALOR_TOTAL_MAQUINA)}</span></div>
-            </div>
-            <div style="background: #FAF6F2; border: 1px solid #D6C5BC; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 800; color: #512C19;">
-                {percentual_quitado:.1f}% concluído
-            </div>
-        </div>
-        <div style="background: #EAE0D8; border-radius: 999px; height: 12px; width: 100%; overflow: hidden; margin-top: 6px;">
-            <div style="background: linear-gradient(90deg, #512C19 0%, #784227 100%); width: {percentual_quitado}%; height: 100%; border-radius: 999px;"></div>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: #785D50; flex-wrap: wrap; gap: 4px;">
-            <span>✅ Total Compensado: <strong style="color: #16A34A;">{format_brl(total_compensado_geral)}</strong></span>
-            <span>⏳ Saldo Restante: <strong style="color: #C27835;">{format_brl(saldo_geral_maquina)}</strong></span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    prog_html = (
+        f'<div style="background: #FFFFFF; border: 1px solid #EAE0D8; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(81,44,25,0.04);">'
+        f'<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">'
+        f'<div>'
+        f'<span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #785D50; letter-spacing: 0.5px;">Quitação Geral do Acordo</span>'
+        f'<div style="font-size: 18px; font-weight: 800; color: #512C19; margin-top: 2px;">{format_brl(total_compensado_geral)} <span style="font-size: 13px; font-weight: 500; color: #785D50;">de {format_brl(VALOR_TOTAL_MAQUINA)}</span></div>'
+        f'</div>'
+        f'<div style="background: #FAF6F2; border: 1px solid #D6C5BC; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 800; color: #512C19;">{percentual_quitado:.1f}% concluído</div>'
+        f'</div>'
+        f'<div style="background: #EAE0D8; border-radius: 999px; height: 12px; width: 100%; overflow: hidden; margin-top: 6px;">'
+        f'<div style="background: linear-gradient(90deg, #512C19 0%, #784227 100%); width: {percentual_quitado}%; height: 100%; border-radius: 999px;"></div>'
+        f'</div>'
+        f'<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: #785D50; flex-wrap: wrap; gap: 4px;">'
+        f'<span>✅ Total Compensado: <strong style="color: #16A34A;">{format_brl(total_compensado_geral)}</strong></span>'
+        f'<span>⏳ Saldo Restante: <strong style="color: #C27835;">{format_brl(saldo_geral_maquina)}</strong></span>'
+        f'</div>'
+        f'</div>'
+    )
+    st.markdown(prog_html, unsafe_allow_html=True)
 
     # 2. Clean Responsive Evolution Chart
     fig = go.Figure()
@@ -375,33 +374,31 @@ with selected_tabs[0]:
             badge_border = "#E5E7EB"
 
         with col:
-            st.markdown(f"""
-            <div style="background: #FFFFFF; border: 1px solid #EAE0D8; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(81,44,25,0.03);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <span style="font-weight: 800; font-size: 15px; color: #512C19;">{m_name}</span>
-                    <span style="background: {badge_bg}; color: {badge_color}; border: 1px solid {badge_border}; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px;">
-                        {m_status}
-                    </span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
-                    <span style="color: #785D50;">Notas Lançadas:</span>
-                    <strong style="color: #2A160C;">{format_brl(m_total)}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
-                    <span style="color: #785D50;">Encontro de Contas:</span>
-                    <strong style="color: #16A34A;">{format_brl(m_comp)}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
-                    <span style="color: #785D50;">Saldo da Parcela:</span>
-                    <strong style="color: {'#C27835' if m_saldo > 0 else '#16A34A'};">{format_brl(m_saldo)}</strong>
-                </div>
-                {f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;"><span style="color: #2563EB;">Excedente a Faturar:</span><strong style="color: #2563EB;">{format_brl(m_exced)}</strong></div>' if m_exced > 0 else ''}
-                <div style="border-top: 1px dashed #EAE0D8; margin-top: 10px; padding-top: 8px; font-size: 11.5px; color: #785D50; display: flex; justify-content: space-between;">
-                    <span>Qtd. de Notas: <strong>{m_qtd}</strong></span>
-                    <span>Parcela: <strong>{format_brl(PARCELA_MENSAL)}</strong></span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            exced_block = f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;"><span style="color: #2563EB;">Excedente a Faturar:</span><strong style="color: #2563EB;">{format_brl(m_exced)}</strong></div>' if m_exced > 0 else ''
+            saldo_color = '#C27835' if m_saldo > 0 else '#16A34A'
+            card_html = (
+                f'<div style="background: #FFFFFF; border: 1px solid #EAE0D8; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(81,44,25,0.03);">'
+                f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">'
+                f'<span style="font-weight: 800; font-size: 15px; color: #512C19;">{m_name}</span>'
+                f'<span style="background: {badge_bg}; color: {badge_color}; border: 1px solid {badge_border}; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px;">{m_status}</span>'
+                f'</div>'
+                f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">'
+                f'<span style="color: #785D50;">Notas Lançadas:</span><strong style="color: #2A160C;">{format_brl(m_total)}</strong>'
+                f'</div>'
+                f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">'
+                f'<span style="color: #785D50;">Encontro de Contas:</span><strong style="color: #16A34A;">{format_brl(m_comp)}</strong>'
+                f'</div>'
+                f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">'
+                f'<span style="color: #785D50;">Saldo da Parcela:</span><strong style="color: {saldo_color};">{format_brl(m_saldo)}</strong>'
+                f'</div>'
+                f'{exced_block}'
+                f'<div style="border-top: 1px dashed #EAE0D8; margin-top: 10px; padding-top: 8px; font-size: 11.5px; color: #785D50; display: flex; justify-content: space-between;">'
+                f'<span>Qtd. de Notas: <strong>{m_qtd}</strong></span>'
+                f'<span>Parcela: <strong>{format_brl(PARCELA_MENSAL)}</strong></span>'
+                f'</div>'
+                f'</div>'
+            )
+            st.markdown(card_html, unsafe_allow_html=True)
 
     # 4. Optional Table in Expander
     with st.expander("📋 Ver Tabela Completa (Formato Planilha)"):
