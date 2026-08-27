@@ -205,14 +205,19 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Resumo Global Calculations
+# Resumo Global Calculations with Automatic Rollover (Saldo Acumulado)
 resumo_meses = []
-for m in MESES:
+saldo_anterior_acumulado = 0.0
+
+for idx, m in enumerate(MESES):
     df_m = dados_meses.get(m, pd.DataFrame())
     tot_notas = df_m['valor'].sum() if not df_m.empty else 0.0
-    compensado = min(PARCELA_MENSAL, tot_notas)
-    saldo_pend = max(PARCELA_MENSAL - tot_notas, 0.0)
-    excedente = max(tot_notas - PARCELA_MENSAL, 0.0)
+    
+    # Meta do mês atual = Parcela Base (150k) + Saldo Pendente do mês anterior
+    meta_mes = PARCELA_MENSAL + saldo_anterior_acumulado
+    compensado = min(meta_mes, tot_notas)
+    saldo_pend = max(meta_mes - tot_notas, 0.0)
+    excedente = max(tot_notas - meta_mes, 0.0)
     
     if saldo_pend > 0 and tot_notas == 0:
         status = "Aguardando"
@@ -225,7 +230,9 @@ for m in MESES:
         
     resumo_meses.append({
         'mes': m,
-        'parcela': PARCELA_MENSAL,
+        'parcela_base': PARCELA_MENSAL,
+        'saldo_anterior': saldo_anterior_acumulado,
+        'meta_mes': meta_mes,
         'total_notas': tot_notas,
         'compensado': compensado,
         'saldo': saldo_pend,
@@ -233,6 +240,9 @@ for m in MESES:
         'status': status,
         'qtd_notas': len(df_m)
     })
+    
+    # Transfere o saldo restante para acumular no próximo mês
+    saldo_anterior_acumulado = saldo_pend
 
 df_resumo = pd.DataFrame(resumo_meses)
 total_compensado_geral = df_resumo['compensado'].sum()
@@ -374,6 +384,10 @@ with selected_tabs[0]:
             badge_border = "#E5E7EB"
 
         with col:
+            m_saldo_ant = r_row['saldo_anterior']
+            m_meta = r_row['meta_mes']
+            
+            saldo_ant_line = f'<div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; color: #C27835; background: #FAF6F2; padding: 3px 6px; border-radius: 6px;"><span>+ Saldo Acumulado Anterior:</span><strong>{format_brl(m_saldo_ant)}</strong></div>' if m_saldo_ant > 0 else ''
             exced_block = f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;"><span style="color: #2563EB;">Excedente a Faturar:</span><strong style="color: #2563EB;">{format_brl(m_exced)}</strong></div>' if m_exced > 0 else ''
             saldo_color = '#C27835' if m_saldo > 0 else '#16A34A'
             card_html = (
@@ -382,6 +396,10 @@ with selected_tabs[0]:
                 f'<span style="font-weight: 800; font-size: 15px; color: #512C19;">{m_name}</span>'
                 f'<span style="background: {badge_bg}; color: {badge_color}; border: 1px solid {badge_border}; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px;">{m_status}</span>'
                 f'</div>'
+                f'{saldo_ant_line}'
+                f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">'
+                f'<span style="color: #785D50;">Meta do Mês:</span><strong style="color: #512C19;">{format_brl(m_meta)}</strong>'
+                f'</div>'
                 f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">'
                 f'<span style="color: #785D50;">Notas Lançadas:</span><strong style="color: #2A160C;">{format_brl(m_total)}</strong>'
                 f'</div>'
@@ -389,12 +407,12 @@ with selected_tabs[0]:
                 f'<span style="color: #785D50;">Encontro de Contas:</span><strong style="color: #16A34A;">{format_brl(m_comp)}</strong>'
                 f'</div>'
                 f'<div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">'
-                f'<span style="color: #785D50;">Saldo da Parcela:</span><strong style="color: {saldo_color};">{format_brl(m_saldo)}</strong>'
+                f'<span style="color: #785D50;">Saldo a Compensar:</span><strong style="color: {saldo_color};">{format_brl(m_saldo)}</strong>'
                 f'</div>'
                 f'{exced_block}'
                 f'<div style="border-top: 1px dashed #EAE0D8; margin-top: 10px; padding-top: 8px; font-size: 11.5px; color: #785D50; display: flex; justify-content: space-between;">'
                 f'<span>Qtd. de Notas: <strong>{m_qtd}</strong></span>'
-                f'<span>Parcela: <strong>{format_brl(PARCELA_MENSAL)}</strong></span>'
+                f'<span>Base: <strong>{format_brl(PARCELA_MENSAL)}</strong></span>'
                 f'</div>'
                 f'</div>'
             )
@@ -440,10 +458,15 @@ for i, m in enumerate(MESES, start=1):
         row_info = df_resumo[df_resumo['mes'] == m].iloc[0]
         
         mc1, mc2, mc3, mc4 = st.columns(4)
-        mc1.metric("Parcela do Mês", format_brl(PARCELA_MENSAL))
+        s_ant = row_info['saldo_anterior']
+        if s_ant > 0:
+            mc1.metric("Meta do Mês", format_brl(row_info['meta_mes']), delta=f"+ {format_brl(s_ant)} acumulado anterior", delta_color="off")
+        else:
+            mc1.metric("Parcela do Mês", format_brl(PARCELA_MENSAL))
+            
         mc2.metric("Total das Notas", format_brl(row_info['total_notas']))
         mc3.metric("Encontro de Contas", format_brl(row_info['compensado']))
-        mc4.metric("Saldo Pendente", format_brl(row_info['saldo']), delta=f"{format_brl(row_info['excedente'])} Excedente" if row_info['excedente'] > 0 else None)
+        mc4.metric("Saldo Restante", format_brl(row_info['saldo']), delta=f"{format_brl(row_info['excedente'])} Excedente" if row_info['excedente'] > 0 else None)
         
         st.divider()
 
